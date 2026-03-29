@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PrimeTrade — Trade Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #080c10;
+      --surface: #0d1117;
+      --surface2: #131920;
+      --border: #1e2d3d;
+      --border2: #243447;
+      --accent: #00d4aa;
+      --accent2: #0096ff;
+      --red: #ff4560;
+      --green: #00d4aa;
+      --text: #e6edf3;
+      --text2: #7d8fa1;
+      --text3: #4a5568;
+      --mono: 'IBM Plex Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── GRID BACKGROUND ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── AUTH SCREEN ── */
+    #auth-screen {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10;
+      background: var(--bg);
+    }
+
+    .auth-box {
+      width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      padding: 48px 40px;
+      position: relative;
+    }
+
+    .auth-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    .auth-logo {
+      font-family: var(--sans);
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .auth-logo span { color: var(--accent); }
+
+    .auth-tagline {
+      font-size: 11px;
+      color: var(--text2);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 36px;
+    }
+
+    .tab-row {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+
+    .tab-btn {
+      background: none; border: none;
+      padding: 10px 20px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text2);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .form-group { margin-bottom: 18px; }
+
+    label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text2);
+      margin-bottom: 8px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    select option { background: var(--surface2); }
+
+    .btn {
+      width: 100%;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-top: 8px;
+    }
+
+    .btn:hover { opacity: 0.9; }
+    .btn:active { transform: scale(0.99); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--text2);
+    }
+
+    .btn-danger {
+      background: transparent;
+      border: 1px solid var(--red);
+      color: var(--red);
+    }
+
+    .btn-sm {
+      width: auto;
+      padding: 6px 14px;
+      font-size: 11px;
+    }
+
+    .alert {
+      padding: 10px 14px;
+      font-size: 12px;
+      margin-top: 14px;
+      display: none;
+    }
+
+    .alert.error { background: rgba(255,69,96,0.1); border: 1px solid var(--red); color: var(--red); }
+    .alert.success { background: rgba(0,212,170,0.1); border: 1px solid var(--accent); color: var(--accent); }
+    .alert.show { display: block; }
+
+    /* ── MAIN APP ── */
+    #app-screen { display: none; position: relative; z-index: 1; }
+
+    /* TOPBAR */
+    .topbar {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(8,12,16,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      height: 56px;
+    }
+
+    .topbar-logo {
+      font-family: var(--sans);
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -0.5px;
+    }
+
+    .topbar-logo span { color: var(--accent); }
+
+    .topbar-right { display: flex; align-items: center; gap: 20px; }
+
+    .user-pill {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      font-size: 12px;
+    }
+
+    .role-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    .role-badge.admin { background: rgba(0,150,255,0.15); color: var(--accent2); border: 1px solid var(--accent2); }
+    .role-badge.user  { background: rgba(0,212,170,0.1); color: var(--accent); border: 1px solid var(--accent); }
+
+    .logout-btn {
+      background: none; border: none;
+      color: var(--text2); font-family: var(--mono); font-size: 11px;
+      cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+      transition: color 0.2s;
+    }
+
+    .logout-btn:hover { color: var(--red); }
+
+    /* LAYOUT */
+    .main-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: calc(100vh - 56px);
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+    }
+
+    .sidebar-section-title {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text3);
+      padding: 0 24px;
+      margin-bottom: 8px;
+      margin-top: 20px;
+    }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 24px;
+      font-size: 12px;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.15s;
+      border-left: 2px solid transparent;
+    }
+
+    .nav-item:hover { color: var(--text); background: var(--surface2); }
+    .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(0,212,170,0.05); }
+
+    .nav-icon { width: 16px; text-align: center; font-size: 14px; }
+
+    /* CONTENT */
+    .content { padding: 32px; overflow-y: auto; }
+
+    /* STATS ROW */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+      opacity: 0.4;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text2);
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-family: var(--sans);
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stat-value.green { color: var(--green); }
+    .stat-value.red { color: var(--red); }
+    .stat-value.blue { color: var(--accent2); }
+
+    /* SECTION HEADER */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-family: var(--sans);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .section-sub {
+      font-size: 11px;
+      color: var(--text2);
+      margin-top: 2px;
+    }
+
+    /* PANEL */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text2);
+    }
+
+    .panel-body { padding: 20px; }
+
+    /* TRADE FORM */
+    .trade-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .trade-form-grid .full { grid-column: 1 / -1; }
+
+    .type-toggle { display: flex; gap: 0; }
+    .type-btn {
+      flex: 1; padding: 10px;
+      background: var(--bg); border: 1px solid var(--border);
+      font-family: var(--mono); font-size: 12px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 1px;
+      cursor: pointer; transition: all 0.2s; color: var(--text2);
+    }
+
+    .type-btn.buy.active  { background: rgba(0,212,170,0.15); border-color: var(--green); color: var(--green); }
+    .type-btn.sell.active { background: rgba(255,69,96,0.15); border-color: var(--red); color: var(--red); }
+
+    /* TRADES TABLE */
+    .trades-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+
+    .trades-table th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text3);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .trades-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .trades-table tr:last-child td { border-bottom: none; }
+    .trades-table tr:hover td { background: var(--surface2); }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .badge.buy   { background: rgba(0,212,170,0.12); color: var(--green); border: 1px solid rgba(0,212,170,0.3); }
+    .badge.sell  { background: rgba(255,69,96,0.12); color: var(--red);   border: 1px solid rgba(255,69,96,0.3); }
+    .badge.open  { background: rgba(0,150,255,0.12); color: var(--accent2); border: 1px solid rgba(0,150,255,0.3); }
+    .badge.closed { background: rgba(125,143,161,0.12); color: var(--text2); border: 1px solid var(--border); }
+    .badge.cancelled { background: rgba(255,69,96,0.08); color: var(--red); border: 1px solid rgba(255,69,96,0.2); }
+
+    .action-row { display: flex; gap: 8px; }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      display: none; align-items: center; justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      width: 480px;
+      max-width: 95vw;
+      position: relative;
+    }
+
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .modal-title {
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .modal-close {
+      background: none; border: none;
+      color: var(--text2); font-size: 20px; cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-body { padding: 24px; }
+
+    /* TOAST */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      padding: 14px 20px;
+      font-size: 12px;
+      z-index: 999;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      max-width: 320px;
+    }
+
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { border-left: 3px solid var(--green); }
+    #toast.error   { border-left: 3px solid var(--red); }
+
+    .empty-state {
+      text-align: center; padding: 48px 24px;
+      color: var(--text2); font-size: 12px;
+    }
+
+    .empty-state .icon { font-size: 32px; margin-bottom: 12px; }
+
+    /* ADMIN SECTION */
+    .hidden { display: none !important; }
+
+    /* filter bar */
+    .filter-bar {
+      display: flex; gap: 10px; align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .filter-bar select {
+      width: auto;
+      padding: 8px 12px;
+      font-size: 11px;
+    }
+
+    /* LOADING SPINNER */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* fade-in rows */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .trades-table tr { animation: fadeUp 0.25s ease forwards; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ AUTH SCREEN ═══════════════ -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">Prime<span>Trade</span></div>
+    <div class="auth-tagline">Trade Intelligence Platform</div>
+
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+      <button class="tab-btn" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="login-form">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="trader@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" />
+      </div>
+      <button class="btn" id="login-btn" onclick="doLogin()">Login</button>
+      <div class="alert" id="login-alert"></div>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="register-form" style="display:none">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="reg-username" placeholder="tradername" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="trader@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="Min 8 chars, 1 uppercase, 1 digit" />
+      </div>
+      <button class="btn" id="register-btn" onclick="doRegister()">Create Account</button>
+      <div class="alert" id="register-alert"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN APP ═══════════════ -->
+<div id="app-screen">
+  <nav class="topbar">
+    <div class="topbar-logo">Prime<span>Trade</span></div>
+    <div class="topbar-right">
+      <div class="user-pill">
+        <span id="topbar-username">—</span>
+        <span class="role-badge" id="topbar-role">user</span>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">⏻ Logout</button>
+    </div>
+  </nav>
+
+  <div class="main-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-section-title">Main</div>
+      <div class="nav-item active" onclick="showSection('dashboard')">
+        <span class="nav-icon">◈</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showSection('trades')">
+        <span class="nav-icon">⇌</span> My Trades
+      </div>
+
+      <div class="sidebar-section-title" id="admin-nav-title" style="display:none">Admin</div>
+      <div class="nav-item hidden" id="nav-all-trades" onclick="showSection('all-trades')">
+        <span class="nav-icon">≡</span> All Trades
+      </div>
+      <div class="nav-item hidden" id="nav-users" onclick="showSection('users')">
+        <span class="nav-icon">⊕</span> Users
+      </div>
+
+      <div class="sidebar-section-title" style="margin-top:32px">API</div>
+      <div class="nav-item" onclick="window.open('/docs','_blank')">
+        <span class="nav-icon">⎋</span> Swagger Docs
+      </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="content">
+
+      <!-- DASHBOARD -->
+      <section id="section-dashboard">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Dashboard</div>
+            <div class="section-sub" id="dash-date">—</div>
+          </div>
+          <button class="btn btn-outline" style="width:auto;padding:8px 20px;font-size:11px" onclick="showSection('trades')">+ New Trade</button>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Total Trades</div>
+            <div class="stat-value" id="stat-total">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Open</div>
+            <div class="stat-value blue" id="stat-open">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Buys</div>
+            <div class="stat-value green" id="stat-buys">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Sells</div>
+            <div class="stat-value red" id="stat-sells">—</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <span>Recent Trades</span>
+            <span id="recent-count" style="color:var(--accent);font-size:11px"></span>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <div id="recent-trades-body"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MY TRADES -->
+      <section id="section-trades" style="display:none">
+        <div class="section-header">
+          <div>
+            <div class="section-title">My Trades</div>
+            <div class="section-sub">Manage your trade log</div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:24px">
+          <div class="panel-header">New Trade</div>
+          <div class="panel-body">
+            <div class="trade-form-grid">
+              <div class="form-group">
+                <label>Symbol</label>
+                <input type="text" id="t-symbol" placeholder="BTC/USDT" />
+              </div>
+              <div class="form-group">
+                <label>Type</label>
+                <div class="type-toggle">
+                  <button class="type-btn buy active" id="type-buy" onclick="setTradeType('buy')">▲ Buy</button>
+                  <button class="type-btn sell" id="type-sell" onclick="setTradeType('sell')">▼ Sell</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Quantity</label>
+                <input type="number" id="t-quantity" placeholder="0.00" min="0" step="any" />
+              </div>
+              <div class="form-group">
+                <label>Entry Price (USDT)</label>
+                <input type="number" id="t-price" placeholder="0.00" min="0" step="any" />
+              </div>
+              <div class="form-group full">
+                <label>Notes (optional)</label>
+                <input type="text" id="t-notes" placeholder="e.g. breakout from resistance" />
+              </div>
+            </div>
+            <button class="btn" style="width:160px;margin-top:4px" onclick="createTrade()">Log Trade</button>
+            <div class="alert" id="trade-form-alert"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <span>Trade Log</span>
+            <div class="filter-bar" style="margin:0">
+              <select id="filter-status" onchange="loadMyTrades()">
+                <option value="">All Status</option>
+                <option value="open">Open</option>
+                <option value="closed">Closed</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+          <div id="my-trades-body" style="padding:0"></div>
+        </div>
+      </section>
+
+      <!-- ALL TRADES (Admin) -->
+      <section id="section-all-trades" style="display:none">
+        <div class="section-header">
+          <div>
+            <div class="section-title">All Trades</div>
+            <div class="section-sub">Platform-wide trade activity</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">All Trades</div>
+          <div id="all-trades-body" style="padding:0"></div>
+        </div>
+      </section>
+
+      <!-- USERS (Admin) -->
+      <section id="section-users" style="display:none">
+        <div class="section-header">
+          <div>
+            <div class="section-title">User Management</div>
+            <div class="section-sub">Admin controls</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">Registered Users</div>
+          <div id="users-body" style="padding:0"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- EDIT TRADE MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Edit Trade</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-trade-id" />
+      <div class="trade-form-grid">
+        <div class="form-group">
+          <label>Symbol</label>
+          <input type="text" id="edit-symbol" />
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="edit-status">
+            <option value="open">Open</option>
+            <option value="closed">Closed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Quantity</label>
+          <input type="number" id="edit-quantity" step="any" />
+        </div>
+        <div class="form-group">
+          <label>Price</label>
+          <input type="number" id="edit-price" step="any" />
+        </div>
+        <div class="form-group full">
+          <label>Notes</label>
+          <input type="text" id="edit-notes" />
+        </div>
+      </div>
+      <button class="btn" style="width:140px;margin-top:8px" onclick="saveEdit()">Save</button>
+      <div class="alert" id="edit-alert"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+  const API = 'http://localhost:8000/api/v1';
+  let token = localStorage.getItem('pt_token');
+  let currentUser = null;
+  let selectedTradeType = 'buy';
+
+  // ── INIT ──
+  window.onload = () => {
+    document.getElementById('dash-date').textContent = new Date().toDateString();
+    if (token) verifyAndEnter();
+  };
+
+  async function verifyAndEnter() {
+    try {
+      const res = await apiFetch('/auth/me');
+      if (res.ok) {
+        currentUser = await res.json();
+        enterApp();
+      } else {
+        token = null; localStorage.removeItem('pt_token');
+      }
+    } catch { token = null; localStorage.removeItem('pt_token'); }
+  }
+
+  // ── AUTH TAB ──
+  function switchTab(t) {
+    document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (t==='login'?i===0:i===1)));
+    document.getElementById('login-form').style.display = t==='login' ? 'block' : 'none';
+    document.getElementById('register-form').style.display = t==='register' ? 'block' : 'none';
+  }
+
+  // ── LOGIN ──
+  async function doLogin() {
+    const email = v('login-email'), pw = v('login-password');
+    if (!email || !pw) return showAlert('login-alert', 'Fill in all fields', 'error');
+    setLoading('login-btn', true);
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pw })
+      });
+      const data = await res.json();
+      if (!res.ok) return showAlert('login-alert', data.detail || 'Login failed', 'error');
+      token = data.access_token;
+      currentUser = data.user;
+      localStorage.setItem('pt_token', token);
+      enterApp();
+    } catch { showAlert('login-alert', 'Cannot reach server', 'error'); }
+    finally { setLoading('login-btn', false); }
+  }
+
+  // ── REGISTER ──
+  async function doRegister() {
+    const username = v('reg-username'), email = v('reg-email'), pw = v('reg-password');
+    if (!username || !email || !pw) return showAlert('register-alert', 'Fill in all fields', 'error');
+    setLoading('register-btn', true);
+    try {
+      const res = await fetch(`${API}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password: pw })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const msg = data.detail?.[0]?.msg || data.detail || 'Registration failed';
+        return showAlert('register-alert', msg, 'error');
+      }
+      token = data.access_token;
+      currentUser = data.user;
+      localStorage.setItem('pt_token', token);
+      enterApp();
+    } catch { showAlert('register-alert', 'Cannot reach server', 'error'); }
+    finally { setLoading('register-btn', false); }
+  }
+
+  // ── ENTER APP ──
+  function enterApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    document.getElementById('topbar-username').textContent = currentUser.username;
+    const roleBadge = document.getElementById('topbar-role');
+    roleBadge.textContent = currentUser.role;
+    roleBadge.className = `role-badge ${currentUser.role}`;
+
+    if (currentUser.role === 'admin') {
+      document.getElementById('admin-nav-title').style.display = 'block';
+      document.getElementById('nav-all-trades').classList.remove('hidden');
+      document.getElementById('nav-users').classList.remove('hidden');
+    }
+    showSection('dashboard');
+  }
+
+  // ── LOGOUT ──
+  function doLogout() {
+    token = null; currentUser = null;
+    localStorage.removeItem('pt_token');
+    document.getElementById('app-screen').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+  }
+
+  // ── SECTIONS ──
+  function showSection(name) {
+    document.querySelectorAll('section[id^="section-"]').forEach(s => s.style.display = 'none');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(`section-${name}`).style.display = 'block';
+
+    const navMap = { dashboard: 0, trades: 1, 'all-trades': 2, users: 3 };
+    const navItems = document.querySelectorAll('.nav-item:not(.hidden)');
+
+    if (name === 'dashboard') { loadDashboard(); navItems[0]?.classList.add('active'); }
+    if (name === 'trades')    { loadMyTrades();  navItems[1]?.classList.add('active'); }
+    if (name === 'all-trades') { loadAllTrades(); }
+    if (name === 'users')     { loadUsers(); }
+  }
+
+  // ── DASHBOARD ──
+  async function loadDashboard() {
+    const res = await apiFetch('/trades/?limit=100');
+    if (!res.ok) return;
+    const data = await res.json();
+    const trades = data.trades || [];
+    const open = trades.filter(t => t.status === 'open').length;
+    const buys = trades.filter(t => t.trade_type === 'buy').length;
+    const sells = trades.filter(t => t.trade_type === 'sell').length;
+    document.getElementById('stat-total').textContent = data.total;
+    document.getElementById('stat-open').textContent = open;
+    document.getElementById('stat-buys').textContent = buys;
+    document.getElementById('stat-sells').textContent = sells;
+
+    const recent = trades.slice(0, 5);
+    document.getElementById('recent-count').textContent = `${recent.length} recent`;
+    document.getElementById('recent-trades-body').innerHTML = recent.length
+      ? renderTradesTable(recent, false)
+      : emptyState('No trades yet. Log your first trade!');
+  }
+
+  // ── MY TRADES ──
+  async function loadMyTrades() {
+    const status = document.getElementById('filter-status').value;
+    const url = `/trades/${status ? `?status=${status}` : ''}`;
+    const res = await apiFetch(url);
+    if (!res.ok) return;
+    const data = await res.json();
+    document.getElementById('my-trades-body').innerHTML = data.trades.length
+      ? renderTradesTable(data.trades, true)
+      : emptyState('No trades found. Log one above!');
+  }
+
+  // ── ALL TRADES (admin) ──
+  async function loadAllTrades() {
+    const res = await apiFetch('/trades/all');
+    if (!res.ok) return;
+    const data = await res.json();
+    document.getElementById('all-trades-body').innerHTML = data.trades.length
+      ? renderTradesTable(data.trades, true, true)
+      : emptyState('No trades on the platform yet.');
+  }
+
+  // ── USERS (admin) ──
+  async function loadUsers() {
+    const res = await apiFetch('/users/');
+    if (!res.ok) return;
+    const users = await res.json();
+    if (!users.length) {
+      document.getElementById('users-body').innerHTML = emptyState('No users found.');
+      return;
+    }
+    document.getElementById('users-body').innerHTML = `
+      <table class="trades-table">
+        <thead><tr>
+          <th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th>
+        </tr></thead>
+        <tbody>
+          ${users.map(u => `
+            <tr>
+              <td style="color:var(--text2)">#${u.id}</td>
+              <td>${u.username}</td>
+              <td style="color:var(--text2)">${u.email}</td>
+              <td><span class="badge ${u.role}">${u.role}</span></td>
+              <td><span class="badge ${u.is_active ? 'open' : 'cancelled'}">${u.is_active ? 'active' : 'inactive'}</span></td>
+              <td style="color:var(--text2)">${fmtDate(u.created_at)}</td>
+              <td>
+                <div class="action-row">
+                  <button class="btn btn-outline btn-sm"
+                    onclick="toggleRole(${u.id}, '${u.role}')">
+                    ${u.role === 'admin' ? '→ User' : '→ Admin'}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  // ── CREATE TRADE ──
+  function setTradeType(t) {
+    selectedTradeType = t;
+    document.getElementById('type-buy').classList.toggle('active', t === 'buy');
+    document.getElementById('type-sell').classList.toggle('active', t === 'sell');
+  }
+
+  async function createTrade() {
+    const symbol = v('t-symbol'), qty = parseFloat(v('t-quantity')), price = parseFloat(v('t-price')), notes = v('t-notes');
+    if (!symbol || isNaN(qty) || isNaN(price)) return showAlert('trade-form-alert', 'Symbol, quantity, and price are required', 'error');
+    const res = await apiFetch('/trades/', 'POST', { symbol, trade_type: selectedTradeType, quantity: qty, price, notes: notes || null });
+    if (!res.ok) {
+      const err = await res.json();
+      return showAlert('trade-form-alert', err.detail || 'Failed to create trade', 'error');
+    }
+    showAlert('trade-form-alert', 'Trade logged ✓', 'success');
+    ['t-symbol','t-quantity','t-price','t-notes'].forEach(id => document.getElementById(id).value = '');
+    setTradeType('buy');
+    loadMyTrades();
+    toast('Trade logged successfully', 'success');
+  }
+
+  // ── EDIT TRADE ──
+  function openEditModal(trade) {
+    document.getElementById('edit-trade-id').value = trade.id;
+    document.getElementById('edit-symbol').value = trade.symbol;
+    document.getElementById('edit-status').value = trade.status;
+    document.getElementById('edit-quantity').value = trade.quantity;
+    document.getElementById('edit-price').value = trade.price;
+    document.getElementById('edit-notes').value = trade.notes || '';
+    document.getElementById('edit-modal').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('edit-modal').classList.remove('open'); }
+
+  async function saveEdit() {
+    const id = document.getElementById('edit-trade-id').value;
+    const payload = {
+      symbol: document.getElementById('edit-symbol').value,
+      status: document.getElementById('edit-status').value,
+      quantity: parseFloat(document.getElementById('edit-quantity').value),
+      price: parseFloat(document.getElementById('edit-price').value),
+      notes: document.getElementById('edit-notes').value || null,
+    };
+    const res = await apiFetch(`/trades/${id}`, 'PATCH', payload);
+    if (!res.ok) {
+      const err = await res.json();
+      return showAlert('edit-alert', err.detail || 'Update failed', 'error');
+    }
+    closeModal();
+    loadMyTrades();
+    toast('Trade updated', 'success');
+  }
+
+  // ── DELETE TRADE ──
+  async function deleteTrade(id) {
+    if (!confirm('Delete this trade?')) return;
+    const res = await apiFetch(`/trades/${id}`, 'DELETE');
+    if (res.ok || res.status === 204) {
+      loadMyTrades();
+      toast('Trade deleted', 'success');
+    } else {
+      toast('Delete failed', 'error');
+    }
+  }
+
+  // ── ADMIN: TOGGLE ROLE ──
+  async function toggleRole(userId, currentRole) {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+    const res = await apiFetch(`/users/${userId}/role`, 'PATCH', { role: newRole });
+    if (res.ok) { toast(`Role updated to ${newRole}`, 'success'); loadUsers(); }
+    else toast('Failed to update role', 'error');
+  }
+
+  // ── RENDER TABLE ──
+  function renderTradesTable(trades, withActions = false, showOwner = false) {
+    return `
+      <table class="trades-table">
+        <thead><tr>
+          ${showOwner ? '<th>Owner</th>' : ''}
+          <th>Symbol</th><th>Type</th><th>Qty</th><th>Price</th>
+          <th>Value</th><th>Status</th><th>Date</th>
+          ${withActions ? '<th>Actions</th>' : ''}
+        </tr></thead>
+        <tbody>
+          ${trades.map(t => `
+            <tr>
+              ${showOwner ? `<td style="color:var(--text2)">#${t.owner_id}</td>` : ''}
+              <td><strong>${t.symbol}</strong></td>
+              <td><span class="badge ${t.trade_type}">${t.trade_type}</span></td>
+              <td>${t.quantity}</td>
+              <td>$${t.price.toLocaleString()}</td>
+              <td style="color:var(--accent)">$${(t.quantity * t.price).toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+              <td><span class="badge ${t.status}">${t.status}</span></td>
+              <td style="color:var(--text2)">${fmtDate(t.created_at)}</td>
+              ${withActions ? `
+                <td>
+                  <div class="action-row">
+                    <button class="btn btn-outline btn-sm" onclick='openEditModal(${JSON.stringify(t)})'>Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteTrade(${t.id})">Del</button>
+                  </div>
+                </td>` : ''}
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  // ── HELPERS ──
+  function apiFetch(path, method = 'GET', body = null) {
+    return fetch(`${API}${path}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      ...(body ? { body: JSON.stringify(body) } : {})
+    });
+  }
+
+  function v(id) { return document.getElementById(id).value.trim(); }
+
+  function showAlert(id, msg, type) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = `alert ${type} show`;
+    setTimeout(() => el.classList.remove('show'), 4000);
+  }
+
+  function toast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `show ${type}`;
+    setTimeout(() => t.className = '', 3000);
+  }
+
+  function setLoading(id, loading) {
+    const btn = document.getElementById(id);
+    btn.disabled = loading;
+    btn.innerHTML = loading ? '<span class="spinner"></span>Loading...' : btn.dataset.orig || btn.textContent;
+    if (!loading && !btn.dataset.orig) btn.dataset.orig = btn.textContent;
+  }
+
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function emptyState(msg) {
+    return `<div class="empty-state"><div class="icon">◈</div>${msg}</div>`;
+  }
+
+  // close modal on overlay click
+  document.getElementById('edit-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // Enter key on login
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('auth-screen').style.display !== 'none') {
+      const loginVisible = document.getElementById('login-form').style.display !== 'none';
+      loginVisible ? doLogin() : doRegister();
+    }
+  });
+</script>
+</body>
+</html>
